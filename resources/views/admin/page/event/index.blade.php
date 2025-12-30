@@ -54,7 +54,12 @@
                                 data-kt-image-input="true">
                                 <!--begin::Preview existing avatar-->
                                 <div class="image-input-wrapper w-150px h-150px"
-                                    @if ($product && $product->avatar) style="background-image: url('{{ asset('storage/' . $product->avatar) }}'); background-size: cover; background-position: center;" @endif>
+                                    @if ($product && $product->avatar) style="background-image: url('{{ $product->avatar_url }}') !important; background-size: cover !important; background-position: center !important;" @endif>
+                                    @if ($product && $product->avatar)
+                                        <img src="{{ $product->avatar_url }}" alt="Product Image"
+                                            style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.475rem;"
+                                            onerror="console.error('Image failed to load:', this.src)">
+                                    @endif
                                 </div>
                                 <!--end::Preview existing avatar-->
                                 <!--begin::Label-->
@@ -92,8 +97,8 @@
                                     <strong>Debug:</strong><br>
                                     <small>
                                         Avatar Path: {{ $product->avatar }}<br>
-                                        Full URL: {{ asset('storage/' . $product->avatar) }}<br>
-                                        <a href="{{ asset('storage/' . $product->avatar) }}" target="_blank"
+                                        Full URL: {{ $product->avatar_url }}<br>
+                                        <a href="{{ $product->avatar_url }}" target="_blank"
                                             class="btn btn-sm btn-light mt-2">
                                             <i class="ki-outline ki-eye"></i> Test Image Link
                                         </a>
@@ -259,9 +264,16 @@
                 if (imageWrapper) {
                     const bgImage = window.getComputedStyle(imageWrapper).backgroundImage;
 
+                    // 🔍 Debug log
+                    console.log('Background Image:', bgImage);
+                    console.log('Image Wrapper:', imageWrapper);
+
                     // If background image exists, remove the "image-input-empty" class
                     if (bgImage && bgImage !== 'none' && !bgImage.includes('blank-image')) {
                         imageInput.classList.remove('image-input-empty');
+                        console.log('✅ Image loaded successfully');
+                    } else {
+                        console.log('❌ No image detected');
                     }
                 }
             });
