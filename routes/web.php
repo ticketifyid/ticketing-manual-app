@@ -71,6 +71,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/buyer', [BuyerController::class, 'index'])->name('admin.buyer.index');
     Route::get('/export-buyers', [BuyerController::class, 'export'])->name('admin.buyer.export');
+    Route::get('/buyer/{id}', [BuyerController::class, 'show'])->name('admin.buyer.show');
+    Route::post('/buyer/{id}/approve', [BuyerController::class, 'approve'])->name('admin.buyer.approve');
+    Route::post('/buyer/{id}/reject', [BuyerController::class, 'reject'])->name('admin.buyer.reject');
 
     Route::get('/checkin-list', [CheckinController::class, 'index'])->name('admin.checkin.index');
 

@@ -232,6 +232,7 @@
                                     <th class="min-w-70px">Qty</th>
                                     <th class="min-w-100px">Status</th>
                                     <th class="min-w-100px">Tanggal</th>
+                                    <th class="text-end min-w-100px">Aksi</th>
                                 </tr>
                             </thead>
                             <!--end::Table head-->
@@ -290,10 +291,21 @@
                                                     class="text-muted fw-semibold fs-7">{{ $buyer->created_at->format('H:i') }}</span>
                                             </div>
                                         </td>
+                                        <td class="text-end">
+                                            <a href="{{ route('admin.buyer.show', $buyer->id) }}"
+                                                class="btn btn-sm btn-light btn-active-light-primary">
+                                                <i class="ki-duotone ki-eye fs-5">
+                                                    <span class="path1"></span>
+                                                    <span class="path2"></span>
+                                                    <span class="path3"></span>
+                                                </i>
+                                                Detail
+                                            </a>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr id="emptyState">
-                                        <td colspan="8" class="text-center py-10">
+                                        <td colspan="9" class="text-center py-10">
                                             <div class="d-flex flex-column align-items-center">
                                                 <i class="ki-duotone ki-file-deleted fs-3x text-muted mb-4">
                                                     <span class="path1"></span>
@@ -424,7 +436,7 @@
                 $('#statusFilter').select2({
                     placeholder: "Filter Status",
                     allowClear: true,
-                    minimumResultsForSearch: Infinity // Disable search in dropdown
+                    minimumResultsForSearch: Infinity
                 });
             }
 
@@ -437,33 +449,22 @@
                 let hasActiveFilters = searchValue || statusValue;
                 let filterDescriptions = [];
 
-                console.log('Applying filters:', {
-                    searchValue,
-                    statusValue,
-                    hasActiveFilters
-                });
-
-                // Hide empty state initially
                 if (emptyState) emptyState.style.display = 'none';
 
-                // Show all rows first, then filter
                 originalRows.forEach(function(row) {
                     const searchData = row.getAttribute('data-search') || '';
                     const rowStatus = row.getAttribute('data-status') || '';
 
                     let showRow = true;
 
-                    // Search filter - check if search value is found in search data
                     if (searchValue && !searchData.includes(searchValue)) {
                         showRow = false;
                     }
 
-                    // Status filter - exact match
                     if (statusValue && rowStatus !== statusValue) {
                         showRow = false;
                     }
 
-                    // Show/hide row
                     if (showRow) {
                         row.style.display = '';
                         visibleCount++;
@@ -472,9 +473,6 @@
                     }
                 });
 
-                console.log('Visible count:', visibleCount);
-
-                // Build filter descriptions
                 if (searchValue) {
                     filterDescriptions.push(`Pencarian: "${searchValue}"`);
                 }
@@ -483,7 +481,6 @@
                     filterDescriptions.push(`Status: ${statusText}`);
                 }
 
-                // Show/hide filter info
                 if (hasActiveFilters && filterDescriptions.length > 0) {
                     if (filterInfo) {
                         filterInfo.classList.remove('d-none');
@@ -506,7 +503,6 @@
                     }
                 }
 
-                // Show/hide no results message
                 if (visibleCount === 0 && hasActiveFilters) {
                     if (noResults) {
                         noResults.classList.remove('d-none');
@@ -521,21 +517,17 @@
                     if (paginationWrapper && !hasActiveFilters) {
                         paginationWrapper.style.display = '';
                     } else if (paginationWrapper && hasActiveFilters) {
-                        // Hide pagination when filtering
                         paginationWrapper.style.display = 'none';
                     }
 
-                    // Show empty state if no original data and no filters
                     if (totalOriginalCount === 0 && !hasActiveFilters && emptyState) {
                         emptyState.style.display = '';
                     }
                 }
 
-                // Update row numbers for visible rows
                 updateRowNumbers();
             }
 
-            // Update row numbers for visible rows
             function updateRowNumbers() {
                 let visibleIndex = 1;
                 originalRows.forEach(function(row) {
@@ -548,7 +540,6 @@
                 });
             }
 
-            // Debounce function for search input
             function debounce(func, wait) {
                 let timeout;
                 return function executedFunction(...args) {
@@ -561,15 +552,11 @@
                 };
             }
 
-            // Event listeners
             if (searchInput) {
-                // Real-time search with debounce
                 searchInput.addEventListener('input', debounce(function() {
-                    console.log('Search input changed:', this.value);
                     applyFilters();
-                }, 200)); // 200ms delay for real-time feel
+                }, 200));
 
-                // Also trigger on keyup for immediate feedback
                 searchInput.addEventListener('keyup', function() {
                     if (this.value === '') {
                         applyFilters();
@@ -578,33 +565,25 @@
             }
 
             if (statusFilter) {
-                // Handle both regular select and Select2 change events
                 statusFilter.addEventListener('change', function() {
-                    console.log('Status filter changed:', this.value);
                     applyFilters();
                 });
 
-                // For Select2
                 if (typeof $ !== 'undefined') {
                     $('#statusFilter').on('select2:select select2:clear', function() {
-                        console.log('Select2 status changed:', this.value);
-                        setTimeout(applyFilters, 50); // Small delay to ensure value is updated
+                        setTimeout(applyFilters, 50);
                     });
                 }
             }
 
-            // Reset filters
             if (resetButton) {
                 resetButton.addEventListener('click', function() {
-                    console.log('Resetting filters');
-
                     if (searchInput) {
                         searchInput.value = '';
                     }
 
                     if (statusFilter) {
                         statusFilter.value = '';
-                        // Reset Select2 if it exists
                         if (typeof $ !== 'undefined' && $('#statusFilter').hasClass(
                                 'select2-hidden-accessible')) {
                             $('#statusFilter').val('').trigger('change');
@@ -615,7 +594,6 @@
                 });
             }
 
-            // Clear filter info
             if (clearFilterInfo) {
                 clearFilterInfo.addEventListener('click', function() {
                     if (resetButton) {
@@ -624,19 +602,7 @@
                 });
             }
 
-            // Search icon visual feedback
-            if (searchInput) {
-                const searchIcon = document.querySelector('.ki-magnifier');
-                searchInput.addEventListener('input', function() {
-                    if (searchIcon) {
-                        searchIcon.style.opacity = this.value.length > 0 ? '0.5' : '1';
-                    }
-                });
-            }
-
-            // Keyboard shortcuts
             document.addEventListener('keydown', function(e) {
-                // Ctrl/Cmd + K to focus search
                 if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                     e.preventDefault();
                     if (searchInput) {
@@ -645,7 +611,6 @@
                     }
                 }
 
-                // Escape to clear search
                 if (e.key === 'Escape' && document.activeElement === searchInput) {
                     if (resetButton) {
                         resetButton.click();
@@ -654,38 +619,7 @@
                 }
             });
 
-            // Initialize filters on page load
-            console.log('Initializing filters');
             applyFilters();
-
-            // Add loading state for search input
-            function setSearchLoading(isLoading) {
-                const searchIcon = document.querySelector('.ki-magnifier');
-                if (searchIcon) {
-                    if (isLoading) {
-                        searchIcon.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
-                    } else {
-                        searchIcon.innerHTML = '<span class="path1"></span><span class="path2"></span>';
-                    }
-                }
-            }
-
-            // Enhanced search with loading state
-            if (searchInput) {
-                const debouncedSearch = debounce(function() {
-                    setSearchLoading(false);
-                    applyFilters();
-                }, 300);
-
-                searchInput.addEventListener('input', function() {
-                    if (this.value.length > 0) {
-                        setSearchLoading(true);
-                    }
-                    debouncedSearch();
-                });
-            }
-
-            console.log('Search and filter initialization complete');
         });
     </script>
 @endpush

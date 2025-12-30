@@ -40,6 +40,41 @@ class BuyerController extends Controller
 
         return view('admin.page.buyer.index', compact('buyers', 'totalRevenue', 'totalTicketsSold', 'ticketStats'));
     }
+
+    public function show($id)
+    {
+        $buyer = Buyer::with(['ticket', 'discount'])->findOrFail($id);
+
+        return view('admin.page.buyer.detail', compact('buyer'));
+    }
+
+    public function approve($id)
+    {
+        $buyer = Buyer::findOrFail($id);
+
+        $buyer->update([
+            'payment_status' => 'paid',
+            'paid_at' => now(),
+            'payment_updated_at' => now()
+        ]);
+
+        return redirect()->route('admin.buyer.show', $id)
+            ->with('success', 'Pesanan berhasil disetujui dan status diubah menjadi Paid');
+    }
+
+    public function reject($id)
+    {
+        $buyer = Buyer::findOrFail($id);
+
+        $buyer->update([
+            'payment_status' => 'failed',
+            'payment_updated_at' => now()
+        ]);
+
+        return redirect()->route('admin.buyer.show', $id)
+            ->with('success', 'Pesanan ditolak dan status diubah menjadi Failed');
+    }
+
     public function export()
     {
         $timestamp = now()->format('Y-m-d');
