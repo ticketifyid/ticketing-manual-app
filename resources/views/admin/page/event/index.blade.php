@@ -90,21 +90,6 @@
                             <div class="text-muted fs-7">Set the product thumbnail image. Only *.png, *.jpg and *.jpeg image
                                 files are accepted</div>
                             <!--end::Description-->
-
-                            <!-- Debug Info - Hapus setelah selesai -->
-                            @if ($product && $product->avatar)
-                                <div class="alert alert-info mt-3 text-start">
-                                    <strong>Debug:</strong><br>
-                                    <small>
-                                        Avatar Path: {{ $product->avatar }}<br>
-                                        Full URL: {{ $product->avatar_url }}<br>
-                                        <a href="{{ $product->avatar_url }}" target="_blank"
-                                            class="btn btn-sm btn-light mt-2">
-                                            <i class="ki-outline ki-eye"></i> Test Image Link
-                                        </a>
-                                    </small>
-                                </div>
-                            @endif
                         </div>
                         <!--end::Card body-->
                     </div>
