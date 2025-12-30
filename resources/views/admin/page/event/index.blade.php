@@ -50,11 +50,11 @@
                                 }
                             </style>
                             <!--end::Image input placeholder-->
-                            <div class="image-input image-input-empty image-input-outline image-input-placeholder mb-3"
+                            <div class="image-input {{ $product && $product->avatar ? '' : 'image-input-empty' }} image-input-outline image-input-placeholder mb-3"
                                 data-kt-image-input="true">
                                 <!--begin::Preview existing avatar-->
                                 <div class="image-input-wrapper w-150px h-150px"
-                                    @if ($product && $product->avatar) style="background-image: url('{{ Storage::url($product->avatar) }}'); background-size: cover; background-position: center;" @endif>
+                                    @if ($product && $product->avatar) style="background-image: url('{{ asset('storage/' . $product->avatar) }}'); background-size: cover; background-position: center;" @endif>
                                 </div>
                                 <!--end::Preview existing avatar-->
                                 <!--begin::Label-->
@@ -85,6 +85,21 @@
                             <div class="text-muted fs-7">Set the product thumbnail image. Only *.png, *.jpg and *.jpeg image
                                 files are accepted</div>
                             <!--end::Description-->
+
+                            <!-- Debug Info - Hapus setelah selesai -->
+                            @if ($product && $product->avatar)
+                                <div class="alert alert-info mt-3 text-start">
+                                    <strong>Debug:</strong><br>
+                                    <small>
+                                        Avatar Path: {{ $product->avatar }}<br>
+                                        Full URL: {{ asset('storage/' . $product->avatar) }}<br>
+                                        <a href="{{ asset('storage/' . $product->avatar) }}" target="_blank"
+                                            class="btn btn-sm btn-light mt-2">
+                                            <i class="ki-outline ki-eye"></i> Test Image Link
+                                        </a>
+                                    </small>
+                                </div>
+                            @endif
                         </div>
                         <!--end::Card body-->
                     </div>
@@ -233,4 +248,23 @@
         <!--end::Content container-->
     </div>
     <!--end::Content-->
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Load existing image on page load
+                const imageInput = document.querySelector('[data-kt-image-input="true"]');
+                const imageWrapper = imageInput?.querySelector('.image-input-wrapper');
+
+                if (imageWrapper) {
+                    const bgImage = window.getComputedStyle(imageWrapper).backgroundImage;
+
+                    // If background image exists, remove the "image-input-empty" class
+                    if (bgImage && bgImage !== 'none' && !bgImage.includes('blank-image')) {
+                        imageInput.classList.remove('image-input-empty');
+                    }
+                }
+            });
+        </script>
+    @endpush
 @endsection

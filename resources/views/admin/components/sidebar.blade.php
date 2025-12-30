@@ -30,7 +30,7 @@
                 data-kt-menu="true" data-kt-menu-expand="false">
 
                 <!--begin:Menu item - Dashboard-->
-                {{-- <div class="menu-item">
+                <div class="menu-item">
                     <a class="menu-link {{ Request::routeIs('admin.dashboard') ? 'active' : '' }}"
                         href="{{ route('admin.dashboard') }}">
                         <span class="menu-icon">
@@ -38,7 +38,7 @@
                         </span>
                         <span class="menu-title">Dashboard</span>
                     </a>
-                </div> --}}
+                </div>
                 <!--end:Menu item-->
 
                 <!--begin:Menu item - Event-->
@@ -69,7 +69,7 @@
                 <!--end:Menu item-->
 
                 <!--begin:Menu item - Diskon-->
-                {{-- <div class="menu-item">
+                <div class="menu-item">
                     <a class="menu-link {{ Request::routeIs('admin.discounts.*') ? 'active' : '' }}"
                         href="{{ route('admin.discounts.index') }}">
                         <span class="menu-icon">
@@ -77,7 +77,7 @@
                         </span>
                         <span class="menu-title">Diskon</span>
                     </a>
-                </div> --}}
+                </div>
                 <!--end:Menu item-->
 
                 <!--begin:Menu item - Pembeli-->

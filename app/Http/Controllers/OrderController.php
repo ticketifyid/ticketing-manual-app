@@ -6,8 +6,8 @@ use Exception;
 use App\Models\Buyer;
 use App\Models\Ticket;
 use App\Models\Product;
+use App\Models\Discount;
 use Illuminate\Http\Request;
-use App\Services\XenditService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -17,268 +17,332 @@ class OrderController extends Controller
 {
     public function index()
     {
-        // Ambil 1 produk terbaru (event)
         $product = Product::latest()->first();
-
-        // Ambil semua tiket yang statusnya published
         $tickets = Ticket::where('status', 'published')->get();
 
         return view('order.index', compact('product', 'tickets'));
     }
+
     public function create($ticket_id)
     {
         $ticket = Ticket::findOrFail($ticket_id);
-        $product = Product::first(); // Ambil product pertama karena hanya ada 1
+
+        if ($ticket->status !== 'published') {
+            return redirect()->route('order.index')
+                ->with('error', 'Tiket tidak tersedia untuk dijual');
+        }
+
+        if ($ticket->qty <= 0) {
+            return redirect()->route('order.index')
+                ->with('error', 'Maaf, tiket sudah habis terjual');
+        }
+
+        $product = Product::first();
 
         return view('order.create', compact('product', 'ticket'));
     }
 
-    public function store(Request $request)
+    public function review(Request $request)
     {
+        // Debug log
+        Log::info('Review method called', [
+            'method' => $request->method(),
+            'all_data' => $request->all()
+        ]);
+
         $request->validate([
             'ticket_id' => 'required|exists:tickets,id',
             'nama_lengkap' => 'required|string|max:255',
+            'gender' => 'required|in:Laki-laki,Perempuan',
+            'nik' => 'required|string|size:16|regex:/^[0-9]{16}$/',
+            'golongan_darah' => 'nullable|in:A,B,AB,O',
+            'alamat' => 'required|string',
             'email' => 'required|email|max:255',
             'no_handphone' => 'required|string|max:20',
-            'quantity' => 'required|integer|min:1|max:5',
+            'nama_bib' => 'required|string|max:100',
+            'komunitas' => 'nullable|string|max:100',
+            'nama_kontak_darurat' => 'required|string|max:255',
+            'nomor_kontak_darurat' => 'required|string|max:20',
+            'quantity' => 'required|integer|in:1', // Hanya boleh 1
+        ], [
+            'nik.size' => 'NIK harus 16 digit',
+            'nik.regex' => 'NIK harus berupa angka',
+            'gender.required' => 'Jenis kelamin wajib dipilih',
+            'nama_bib.required' => 'Nama BIB wajib diisi',
+            'nama_kontak_darurat.required' => 'Nama kontak darurat wajib diisi',
+            'nomor_kontak_darurat.required' => 'Nomor kontak darurat wajib diisi',
         ]);
 
-        // Get ticket data untuk harga
-        $ticket = Ticket::find($request->ticket_id);
+        $ticket = Ticket::findOrFail($request->ticket_id);
+        $product = Product::first();
 
-        // Cek stok tiket
+        // VALIDASI STOK
         if ($ticket->qty < $request->quantity) {
             return redirect()->back()
                 ->with('error', 'Stok tiket tidak mencukupi. Stok tersedia: ' . $ticket->qty)
                 ->withInput();
         }
 
-        // Hitung biaya berdasarkan quantity
+        // Hitung biaya
         $ticket_price = $ticket->price * $request->quantity;
-        $admin_fee = $ticket_price * 0.05; // 5% dari total harga tiket
+        $admin_fee = $ticket_price * 0.05;
         $total_amount = $ticket_price + $admin_fee;
 
-        // Generate external ID yang unik
+        return view('order.review', compact('product', 'ticket', 'ticket_price', 'admin_fee', 'total_amount'))
+            ->with('formData', $request->all());
+    }
+
+    public function validateDiscount(Request $request)
+    {
+        $request->validate([
+            'discount_code' => 'required|string',
+            'ticket_id' => 'required|exists:tickets,id',
+        ]);
+
+        $discount = Discount::where('name', $request->discount_code)
+            ->where('ticket_id', $request->ticket_id)
+            ->where('status', 'active')
+            ->where('qty', '>', 0)
+            ->first();
+
+        if ($discount) {
+            return response()->json([
+                'success' => true,
+                'discount_id' => $discount->id,
+                'discount_name' => $discount->name,
+                'discount_amount' => $discount->price,
+                'message' => 'Kode diskon valid! Potongan Rp ' . number_format($discount->price, 0, ',', '.')
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode diskon tidak valid atau sudah habis'
+            ], 404);
+        }
+    }
+
+    public function payment(Request $request)
+    {
+        // Debug log
+        Log::info('Payment method called', [
+            'method' => $request->method(),
+            'all_data' => $request->all()
+        ]);
+
+        $request->validate([
+            'ticket_id' => 'required|exists:tickets,id',
+            'discount_id' => 'nullable|exists:discounts,id',
+            'nama_lengkap' => 'required|string|max:255',
+            'gender' => 'required|in:Laki-laki,Perempuan',
+            'nik' => 'required|string|size:16',
+            'golongan_darah' => 'nullable|in:A,B,AB,O',
+            'alamat' => 'required|string',
+            'email' => 'required|email|max:255',
+            'no_handphone' => 'required|string|max:20',
+            'nama_bib' => 'required|string|max:100',
+            'komunitas' => 'nullable|string|max:100',
+            'nama_kontak_darurat' => 'required|string|max:255',
+            'nomor_kontak_darurat' => 'required|string|max:20',
+            'quantity' => 'required|integer|in:1', // Hanya boleh 1
+        ]);
+
+        $ticket = Ticket::findOrFail($request->ticket_id);
+        $product = Product::first();
+
+        // VALIDASI STOK
+        if ($ticket->qty < $request->quantity) {
+            return redirect()->route('order.create', ['ticket_id' => $ticket->id])
+                ->with('error', 'Maaf, stok tiket sudah berkurang. Stok tersedia: ' . $ticket->qty);
+        }
+
+        // Hitung biaya
+        $ticket_price = $ticket->price * $request->quantity;
+        $discount_amount = 0;
+        $discount = null;
+
+        if ($request->filled('discount_id')) {
+            $discount = Discount::find($request->discount_id);
+            if ($discount && $discount->status === 'active' && $discount->qty > 0) {
+                $discount_amount = $discount->price;
+            }
+        }
+
+        $admin_fee = $ticket_price * 0.05;
+        $total_amount = max(0, ($ticket_price + $admin_fee) - $discount_amount);
+
+        return view('order.payment', compact('product', 'ticket', 'discount', 'ticket_price', 'admin_fee', 'discount_amount', 'total_amount'))
+            ->with('formData', $request->all());
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'ticket_id' => 'required|exists:tickets,id',
+            'discount_id' => 'nullable|exists:discounts,id',
+            'nama_lengkap' => 'required|string|max:255',
+            'gender' => 'required|in:Laki-laki,Perempuan',
+            'nik' => 'required|string|size:16|regex:/^[0-9]{16}$/',
+            'golongan_darah' => 'nullable|in:A,B,AB,O',
+            'alamat' => 'required|string',
+            'email' => 'required|email|max:255',
+            'no_handphone' => 'required|string|max:20',
+            'nama_bib' => 'required|string|max:100',
+            'komunitas' => 'nullable|string|max:100',
+            'nama_kontak_darurat' => 'required|string|max:255',
+            'nomor_kontak_darurat' => 'required|string|max:20',
+            'quantity' => 'required|integer|in:1', // Hanya boleh 1
+            'payment_proof' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'nik.size' => 'NIK harus 16 digit',
+            'nik.regex' => 'NIK harus berupa angka',
+            'payment_proof.required' => 'Bukti pembayaran wajib diupload',
+        ]);
+
+        $ticket = Ticket::findOrFail($request->ticket_id);
+
+        // VALIDASI STOK FINAL
+        if ($ticket->qty < $request->quantity) {
+            return redirect()->back()
+                ->with('error', 'Stok tiket tidak mencukupi. Stok tersedia: ' . $ticket->qty)
+                ->withInput();
+        }
+
+        // Hitung biaya
+        $ticket_price = $ticket->price * $request->quantity;
+        $discount_amount = 0;
+        $discount_id = null;
+
+        // Validasi diskon
+        if ($request->filled('discount_id')) {
+            $discount = Discount::where('id', $request->discount_id)
+                ->where('ticket_id', $ticket->id)
+                ->where('status', 'active')
+                ->where('qty', '>', 0)
+                ->first();
+
+            if ($discount) {
+                $discount_amount = $discount->price;
+                $discount_id = $discount->id;
+            } else {
+                return redirect()->back()
+                    ->with('error', 'Maaf, diskon sudah tidak tersedia')
+                    ->withInput();
+            }
+        }
+
+        $admin_fee = $ticket_price * 0.05;
+        $total_amount = max(0, ($ticket_price + $admin_fee) - $discount_amount);
+
+        // Generate external ID unik
         do {
             $randomNumber = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
-            $externalId = 'SAMPOOKONG-' . $randomNumber;
-
-            // Cek apakah external_id sudah ada di database
+            $externalId = 'ORD-' . $randomNumber;
             $exists = Buyer::where('external_id', $externalId)->exists();
         } while ($exists);
 
-        // Gunakan Database Transaction untuk memastikan atomicity
         DB::beginTransaction();
 
         try {
-            // Kurangi stok tiket langsung (untuk testing)
-            $ticket->decrement('qty', $request->quantity);
+            // VALIDASI STOK DALAM TRANSACTION
+            $ticket = Ticket::lockForUpdate()->findOrFail($request->ticket_id);
 
-            // Simpan ke database buyers
-            $buyer = new Buyer();
-            $buyer->nama_lengkap = $request->nama_lengkap;
-            $buyer->email = $request->email;
-            $buyer->no_handphone = $request->no_handphone;
-            $buyer->nama_instagram = '-'; // Default value
-            $buyer->alamat_lengkap = '-'; // Default value
-            $buyer->kode_pos = '-'; // Default value
-            $buyer->ukuran_jersey = '-'; // Default value
-            $buyer->quantity = $request->quantity;
-            $buyer->ticket_id = $request->ticket_id;
-            $buyer->ticket_price = $ticket_price;
-            $buyer->admin_fee = $admin_fee;
-            $buyer->total_amount = $total_amount;
-            $buyer->external_id = $externalId;
-            $buyer->save();
-
-            // Debug: Cek konfigurasi Xendit
-            $xenditKey = config('services.xendit.secret_key');
-            if (!$xenditKey) {
-                Log::error('Xendit API Key not configured');
+            if ($ticket->qty < $request->quantity) {
                 DB::rollback();
-                return redirect()->route('admin.dashboard')
-                    ->with('error', 'Konfigurasi Xendit belum diatur. Silakan periksa file .env');
+                return redirect()->back()
+                    ->with('error', 'Maaf, tiket baru saja habis dibeli orang lain')
+                    ->withInput();
             }
 
-            // Debug: Log data yang akan dikirim
-            Log::info('Creating Xendit Invoice', [
-                'buyer_id' => $buyer->id,
-                'external_id' => $externalId,
-                'ticket_id' => $ticket->id,
+            // Upload bukti pembayaran
+            $paymentProofPath = null;
+            if ($request->hasFile('payment_proof')) {
+                $file = $request->file('payment_proof');
+                $filename = 'payment_' . $externalId . '.' . $file->getClientOriginalExtension();
+                $paymentProofPath = $file->storeAs('payment_proofs', $filename, 'public');
+            }
+
+            // Kurangi stok
+            $ticket->decrement('qty', $request->quantity);
+
+            if ($discount_id) {
+                Discount::where('id', $discount_id)->decrement('qty', 1);
+            }
+
+            // Simpan data buyer
+            $buyer = Buyer::create([
+                'nama_lengkap' => $request->nama_lengkap,
+                'gender' => $request->gender,
+                'nik' => $request->nik,
+                'golongan_darah' => $request->golongan_darah,
+                'alamat' => $request->alamat,
+                'email' => $request->email,
+                'no_handphone' => $request->no_handphone,
+                'nama_bib' => $request->nama_bib,
+                'komunitas' => $request->komunitas,
+                'nama_kontak_darurat' => $request->nama_kontak_darurat,
+                'nomor_kontak_darurat' => $request->nomor_kontak_darurat,
                 'quantity' => $request->quantity,
+                'ticket_id' => $request->ticket_id,
+                'discount_id' => $discount_id,
                 'ticket_price' => $ticket_price,
                 'admin_fee' => $admin_fee,
                 'total_amount' => $total_amount,
-                'customer_name' => $request->nama_lengkap,
-                'customer_email' => $request->email
-            ]);
-
-            $xenditService = new XenditService();
-
-            $invoiceData = [
                 'external_id' => $externalId,
-                'description' => 'Pembelian Tiket: ' . $ticket->name . ' (' . $request->quantity . 'x)',
-                'amount' => $total_amount,
-                'success_url' => route('payment.success'),
-                'failure_url' => route('payment.failed'),
-                'items' => [
-                    [
-                        'name' => $ticket->name,
-                        'quantity' => $request->quantity,
-                        'price' => $ticket->price,
-                        'category' => 'Tiket'
-                    ],
-                    [
-                        'name' => 'Biaya Admin (5%)',
-                        'quantity' => 1,
-                        'price' => $admin_fee,
-                        'category' => 'Admin Fee'
-                    ]
-                ],
-                'customer' => [
-                    'given_names' => $request->nama_lengkap,
-                    'email' => $request->email,
-                    'mobile_number' => $request->no_handphone,
-                    'addresses' => [
-                        [
-                            'city' => 'Jakarta',
-                            'country' => 'Indonesia',
-                            'postal_code' => '10000',
-                            'state' => 'DKI Jakarta',
-                            'street_line1' => 'Jakarta',
-                        ]
-                    ]
-                ]
-            ];
-
-            // Debug: Log invoice data sebelum dikirim
-            Log::info('Invoice Data to be sent to Xendit', $invoiceData);
-
-            $invoice = $xenditService->createInvoice($invoiceData);
-
-            // Debug: Log response dari Xendit
-            Log::info('Xendit Invoice Created Successfully', [
-                'invoice_id' => $invoice['id'],
-                'invoice_url' => $invoice['invoice_url']
+                'payment_proof' => $paymentProofPath,
+                'payment_status' => 'pending',
+                'payment_method' => 'manual_transfer',
             ]);
 
-            // Generate QR Code setelah invoice berhasil dibuat
+            // Generate QR Code
             try {
                 $verifyUrl = route('ticket.verify', ['external_id' => $externalId]);
-                $qrCodeFileName = 'qr_' . $externalId . '.png';
-                $qrCodePath = 'qr_codes/' . $qrCodeFileName;
+                $qrCodePath = 'qr_codes/qr_' . $externalId . '.png';
 
-                // Pastikan direktori ada
                 if (!Storage::disk('public')->exists('qr_codes')) {
                     Storage::disk('public')->makeDirectory('qr_codes');
                 }
 
-                // Coba berbagai backend secara berurutan
-                $qrCode = null;
-                $backends = ['svg', 'png'];
-                $usedBackend = null;
+                $qrCode = QrCode::format('png')
+                    ->size(300)
+                    ->margin(2)
+                    ->generate($verifyUrl);
 
-                foreach ($backends as $format) {
-                    try {
-                        if ($format === 'svg') {
-                            $qrCode = QrCode::format('svg')
-                                ->size(300)
-                                ->margin(2)
-                                ->generate($verifyUrl);
-                            $qrCodePath = 'qr_codes/qr_' . $externalId . '.svg';
-                            $usedBackend = 'svg';
-                        } else {
-                            $qrCode = QrCode::format('png')
-                                ->size(300)
-                                ->margin(2)
-                                ->generate($verifyUrl);
-                            $qrCodePath = 'qr_codes/qr_' . $externalId . '.png';
-                            $usedBackend = 'png';
-                        }
-
-                        // Jika berhasil, keluar dari loop
-                        break;
-                    } catch (Exception $backendException) {
-                        Log::warning('QR Code backend failed', [
-                            'backend' => $format,
-                            'error' => $backendException->getMessage()
-                        ]);
-                        continue;
-                    }
-                }
-
-                // Jika tidak ada backend yang berhasil
-                if (!$qrCode) {
-                    throw new Exception('All QR code backends failed');
-                }
-
-                // Store QR code image
                 Storage::disk('public')->put($qrCodePath, $qrCode);
-
-                // Generate full URL untuk QR code
                 $qrCodeFullUrl = Storage::disk('public')->url($qrCodePath);
 
-                // Log QR code generation
-                Log::info('QR Code Generated Successfully', [
+                $buyer->update(['qr_code_path' => $qrCodeFullUrl]);
+
+                Log::info('Order Created Successfully', [
                     'buyer_id' => $buyer->id,
                     'external_id' => $externalId,
-                    'qr_code_path' => $qrCodeFullUrl,
-                    'qr_code_file_path' => $qrCodePath,
-                    'verify_url' => $verifyUrl,
-                    'backend_used' => $usedBackend,
-                    'file_size' => Storage::disk('public')->size($qrCodePath)
+                    'payment_proof' => $paymentProofPath,
+                    'qr_code_path' => $qrCodeFullUrl
                 ]);
-
-                $qrCodePathToStore = $qrCodeFullUrl;
             } catch (Exception $qrException) {
-                // Jika gagal generate QR code, log error tapi tetap lanjutkan proses
                 Log::error('QR Code Generation Failed', [
                     'buyer_id' => $buyer->id,
                     'external_id' => $externalId,
-                    'error' => $qrException->getMessage(),
-                    'trace' => $qrException->getTraceAsString(),
-                    'php_extensions' => [
-                        'gd' => extension_loaded('gd'),
-                        'imagick' => extension_loaded('imagick'),
-                        'svg' => extension_loaded('svg')
-                    ]
+                    'error' => $qrException->getMessage()
                 ]);
-
-                $qrCodePathToStore = null;
             }
 
-            // Update buyer dengan data invoice dan QR code full URL
-            $buyer->update([
-                'xendit_invoice_id' => $invoice['id'],
-                'xendit_invoice_url' => $invoice['invoice_url'],
-                'payment_status' => 'pending',
-                'qr_code_path' => $qrCodePathToStore
-            ]);
-
-            // Commit transaction
             DB::commit();
 
-            // Redirect ke halaman invoice atau dashboard dengan link pembayaran
-            return redirect($invoice['invoice_url']);
+            return redirect()->route('payment.success')
+                ->with('success', 'Pembayaran berhasil diupload! Order ID: ' . $externalId)
+                ->with('external_id', $externalId);
         } catch (Exception $e) {
-            // Rollback transaction jika ada error
             DB::rollback();
 
-            // Enhanced error logging
-            Log::error('Xendit Invoice Creation Failed', [
+            Log::error('Order Creation Failed', [
                 'error_message' => $e->getMessage(),
-                'buyer_id' => $buyer->id ?? 'not_created',
                 'external_id' => $externalId ?? 'not_generated',
-                'ticket_id' => $ticket->id,
-                'quantity' => $request->quantity,
-                'customer_email' => $request->email ?? 'not_provided',
+                'ticket_id' => $request->ticket_id,
                 'stack_trace' => $e->getTraceAsString()
             ]);
 
-            // Return dengan error message yang lebih detail
-            return redirect()->route('order.create', ['ticket_id' => $ticket->id])
-                ->with('error', 'Gagal membuat invoice pembayaran: ' . $e->getMessage())
-                ->with('debug_info', 'Silakan cek log untuk detail error');
+            return redirect()->route('order.create', ['ticket_id' => $request->ticket_id])
+                ->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
         }
     }
 }

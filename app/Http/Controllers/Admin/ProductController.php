@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use Illuminate\Support\Facades\Storage; // ✅ TAMBAHKAN BARIS INI
 
 class ProductController extends Controller
 {
@@ -20,7 +21,7 @@ class ProductController extends Controller
             'product_name' => 'required|string|max:255',
             'product_description' => 'nullable|string',
             'event_date' => 'required|date',
-            'location' => 'nullable|string|max:255', // ✅ Tambahkan validasi location
+            'location' => 'nullable|string|max:255',
             'avatar' => 'nullable|image|mimes:png,jpg,jpeg|max:2048'
         ]);
 
@@ -28,10 +29,10 @@ class ProductController extends Controller
         $product->product_name = $request->product_name;
         $product->product_description = $request->product_description;
         $product->event_date = $request->event_date;
-        $product->location = $request->location; // ✅ Simpan location
+        $product->location = $request->location;
 
         if ($request->hasFile('avatar')) {
-            $avatarPath = $request->file('avatar')->store('products', 'public');
+            $avatarPath = $request->file('avatar')->store('event-images', 'public');
             $product->avatar = $avatarPath;
         }
 
@@ -40,24 +41,29 @@ class ProductController extends Controller
         return redirect()->back()->with('success', 'Product created successfully!');
     }
 
-
     public function update(Request $request, Product $product)
     {
         $request->validate([
             'product_name' => 'required|string|max:255',
             'product_description' => 'nullable|string',
             'event_date' => 'required|date',
-            'location' => 'nullable|string|max:255', // ✅ Validasi lokasi
+            'location' => 'nullable|string|max:255',
             'avatar' => 'nullable|image|mimes:png,jpg,jpeg|max:2048'
         ]);
 
         $product->product_name = $request->product_name;
         $product->product_description = $request->product_description;
         $product->event_date = $request->event_date;
-        $product->location = $request->location; // ✅ Simpan lokasi
+        $product->location = $request->location;
 
         if ($request->hasFile('avatar')) {
-            $avatarPath = $request->file('avatar')->store('products', 'public');
+            // Hapus gambar lama jika ada
+            if ($product->avatar && Storage::disk('public')->exists($product->avatar)) {
+                Storage::disk('public')->delete($product->avatar);
+            }
+
+            // Upload gambar baru
+            $avatarPath = $request->file('avatar')->store('event-images', 'public');
             $product->avatar = $avatarPath;
         }
 

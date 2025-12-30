@@ -29,12 +29,12 @@ Route::get('/checkin/history', [BuyerCheckinController::class, 'getCheckinHistor
 Route::get('/checkin/receipt/{id}', [BuyerCheckinController::class, 'printReceipt'])->name('checkin.receipt');
 
 // Order routes (memindahkan route /order ke path lain untuk menghindari konflik)
-Route::get('/orders', [OrderController::class, 'index'])->name('order.list');
+Route::get('/orders', [OrderController::class, 'index'])->name('order.index');
 Route::get('/order/create/{ticket_id}', [OrderController::class, 'create'])->name('order.create');
+Route::post('/order/review', [OrderController::class, 'review'])->name('order.review');
+Route::post('/order/validate-discount', [OrderController::class, 'validateDiscount'])->name('order.validate-discount');
+Route::post('/order/payment', [OrderController::class, 'payment'])->name('order.payment'); // BARU
 Route::post('/order/store', [OrderController::class, 'store'])->name('order.store');
-// Webhook routes (tanpa middleware auth)
-Route::post('/webhook/xendit/invoice', [PaymentWebhookController::class, 'xenditInvoiceCallback'])
-    ->name('webhook.xendit.invoice');
 
 // Test webhook untuk development
 Route::post('/webhook/test', [PaymentWebhookController::class, 'testWebhook'])
@@ -53,7 +53,7 @@ Route::get('/ticket/verify/{external_id}', [TicketController::class, 'verify'])-
 // Protected admin routes
 Route::middleware('auth')->group(function () {
     // Mengubah route dashboard admin ke /admin
-    // Route::get('/admin', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::get('/event', [ProductController::class, 'index'])->name('admin.event.index');
     Route::post('/products', [ProductController::class, 'store'])->name('admin.products.store');
