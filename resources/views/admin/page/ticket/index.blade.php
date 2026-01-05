@@ -108,16 +108,17 @@
                                         </div>
                                     </td>
                                     <td class="text-end">
-                                        <a href="#"
+                                        <button type="button"
                                             class="btn btn-sm btn-light btn-flex btn-center btn-active-light-primary"
                                             data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">Actions
-                                            <i class="ki-outline ki-down fs-5 ms-1"></i></a>
+                                            <i class="ki-outline ki-down fs-5 ms-1"></i>
+                                        </button>
                                         <!--begin::Menu-->
                                         <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-125px py-4"
                                             data-kt-menu="true">
                                             <!--begin::Menu item-->
                                             <div class="menu-item px-3">
-                                                <a href="#" class="menu-link px-3"
+                                                <a href="javascript:void(0);" class="menu-link px-3"
                                                     onclick="editTicket({{ $ticket->id }}, '{{ $ticket->name }}', {{ $ticket->qty }}, {{ $ticket->price }}, '{{ $ticket->status }}')">Edit</a>
                                             </div>
                                             <!--end::Menu item-->
@@ -127,7 +128,8 @@
                                                     method="POST" style="display: inline;">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="menu-link px-3 border-0 bg-transparent"
+                                                    <button type="submit"
+                                                        class="menu-link px-3 border-0 bg-transparent w-100 text-start"
                                                         onclick="return confirm('Are you sure?')">Delete</button>
                                                 </form>
                                             </div>
