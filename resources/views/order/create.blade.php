@@ -511,9 +511,9 @@
                         </div>
 
                         <div class="summary-item">
-                            <span>Biaya Admin (5%):</span>
+                            <span>Biaya Admin:</span>
                             <span id="adminFee">
-                                Rp {{ number_format($ticket->price * 0.05, 0, ',', '.') }}
+                                Rp 5.000
                             </span>
                         </div>
 
@@ -521,7 +521,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="fw-bold">Total:</span>
                                 <span class="total-price" id="totalPrice">
-                                    Rp {{ number_format($ticket->price * 1.05, 0, ',', '.') }}
+                                    Rp {{ number_format($ticket->price + 5000, 0, ',', '.') }}
                                 </span>
                             </div>
                         </div>
@@ -553,21 +553,22 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const qtyInput = document.getElementById('quantity');
             const ticketPriceEl = document.getElementById('ticketPrice');
             const adminFeeEl = document.getElementById('adminFee');
             const totalPriceEl = document.getElementById('totalPrice');
+
+            // Admin fee static
+            const ADMIN_FEE = 5000;
 
             function updatePrices() {
                 let price = parseInt(ticketPriceEl.getAttribute('data-price'), 10);
                 let qty = 1; // Fixed ke 1 karena quantity hidden
 
                 let ticketTotal = price * qty;
-                let adminFee = Math.round(ticketTotal * 0.05);
-                let total = ticketTotal + adminFee;
+                let total = ticketTotal + ADMIN_FEE;
 
                 ticketPriceEl.textContent = formatRupiah(ticketTotal);
-                adminFeeEl.textContent = formatRupiah(adminFee);
+                adminFeeEl.textContent = formatRupiah(ADMIN_FEE);
                 totalPriceEl.textContent = formatRupiah(total);
             }
 

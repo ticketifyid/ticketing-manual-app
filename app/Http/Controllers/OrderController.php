@@ -15,6 +15,9 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class OrderController extends Controller
 {
+    // Konstanta untuk biaya admin static
+    const ADMIN_FEE = 5000;
+
     public function index()
     {
         $product = Product::latest()->first();
@@ -44,7 +47,6 @@ class OrderController extends Controller
 
     public function review(Request $request)
     {
-        // Debug log
         Log::info('Review method called', [
             'method' => $request->method(),
             'all_data' => $request->all()
@@ -63,7 +65,7 @@ class OrderController extends Controller
             'komunitas' => 'nullable|string|max:100',
             'nama_kontak_darurat' => 'required|string|max:255',
             'nomor_kontak_darurat' => 'required|string|max:20',
-            'quantity' => 'required|integer|in:1', // Hanya boleh 1
+            'quantity' => 'required|integer|in:1',
         ], [
             'nik.size' => 'NIK harus 16 digit',
             'nik.regex' => 'NIK harus berupa angka',
@@ -83,9 +85,9 @@ class OrderController extends Controller
                 ->withInput();
         }
 
-        // Hitung biaya
+        // Hitung biaya dengan admin fee static
         $ticket_price = $ticket->price * $request->quantity;
-        $admin_fee = $ticket_price * 0.05;
+        $admin_fee = self::ADMIN_FEE;
         $total_amount = $ticket_price + $admin_fee;
 
         return view('order.review', compact('product', 'ticket', 'ticket_price', 'admin_fee', 'total_amount'))
@@ -123,7 +125,6 @@ class OrderController extends Controller
 
     public function payment(Request $request)
     {
-        // Debug log
         Log::info('Payment method called', [
             'method' => $request->method(),
             'all_data' => $request->all()
@@ -143,7 +144,7 @@ class OrderController extends Controller
             'komunitas' => 'nullable|string|max:100',
             'nama_kontak_darurat' => 'required|string|max:255',
             'nomor_kontak_darurat' => 'required|string|max:20',
-            'quantity' => 'required|integer|in:1', // Hanya boleh 1
+            'quantity' => 'required|integer|in:1',
         ]);
 
         $ticket = Ticket::findOrFail($request->ticket_id);
@@ -155,7 +156,7 @@ class OrderController extends Controller
                 ->with('error', 'Maaf, stok tiket sudah berkurang. Stok tersedia: ' . $ticket->qty);
         }
 
-        // Hitung biaya
+        // Hitung biaya dengan admin fee static
         $ticket_price = $ticket->price * $request->quantity;
         $discount_amount = 0;
         $discount = null;
@@ -167,7 +168,7 @@ class OrderController extends Controller
             }
         }
 
-        $admin_fee = $ticket_price * 0.05;
+        $admin_fee = self::ADMIN_FEE;
         $total_amount = max(0, ($ticket_price + $admin_fee) - $discount_amount);
 
         return view('order.payment', compact('product', 'ticket', 'discount', 'ticket_price', 'admin_fee', 'discount_amount', 'total_amount'))
@@ -190,7 +191,7 @@ class OrderController extends Controller
             'komunitas' => 'nullable|string|max:100',
             'nama_kontak_darurat' => 'required|string|max:255',
             'nomor_kontak_darurat' => 'required|string|max:20',
-            'quantity' => 'required|integer|in:1', // Hanya boleh 1
+            'quantity' => 'required|integer|in:1',
             'payment_proof' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ], [
             'nik.size' => 'NIK harus 16 digit',
@@ -207,7 +208,7 @@ class OrderController extends Controller
                 ->withInput();
         }
 
-        // Hitung biaya
+        // Hitung biaya dengan admin fee static
         $ticket_price = $ticket->price * $request->quantity;
         $discount_amount = 0;
         $discount_id = null;
@@ -230,7 +231,7 @@ class OrderController extends Controller
             }
         }
 
-        $admin_fee = $ticket_price * 0.05;
+        $admin_fee = self::ADMIN_FEE;
         $total_amount = max(0, ($ticket_price + $admin_fee) - $discount_amount);
 
         // Generate external ID unik
