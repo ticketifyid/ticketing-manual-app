@@ -171,11 +171,16 @@
             box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: linear-gradient(135deg, var(--primary-dark) 0%, #A67C52 100%);
             transform: translateY(-2px);
             color: var(--white);
             box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .btn-primary i {
@@ -279,6 +284,144 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem 1rem;
+        }
+
+        /* Checkbox Agreement Styling */
+        .agreement-box {
+            background: linear-gradient(135deg, #faf8f5 0%, #f5f3f0 100%);
+            border: 2px solid var(--gray-300);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .agreement-box h6 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .agreement-box h6 i {
+            font-size: 1.25rem;
+            margin-right: 0.75rem;
+            color: var(--primary);
+        }
+
+        .agreement-text {
+            max-height: 180px;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background-color: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--gray-700);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .agreement-text::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .agreement-text::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 4px;
+        }
+
+        .agreement-text::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .agreement-text::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        .agreement-text p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        .agreement-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-check {
+            padding: 1.25rem 1.25rem 1.25rem 1.5rem !important;
+            background-color: var(--white);
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            margin-left: 0 !important;
+        }
+
+        .form-check:hover {
+            border-color: var(--primary);
+            background-color: rgba(212, 165, 116, 0.05);
+        }
+
+        .form-check-input {
+            width: 1.5rem;
+            height: 1.5rem;
+            min-width: 1.5rem;
+            margin: 0 1rem 0 0 !important;
+            cursor: pointer;
+            border: 2px solid #999;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            position: relative;
+            background-color: var(--white);
+            float: none !important;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .form-check-input:checked::before {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.125rem;
+            font-weight: bold;
+        }
+
+        .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(212, 165, 116, 0.25);
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .form-check-input:hover {
+            border-color: var(--primary);
+        }
+
+        .form-check-label {
+            font-size: 14px;
+            color: var(--gray-700);
+            cursor: pointer;
+            line-height: 1.6;
+            margin: 0;
+            user-select: none;
         }
 
         @media (max-width: 992px) {
@@ -385,6 +528,19 @@
                                     </div>
 
                                     <div class="col-md-6 mb-3">
+                                        <label for="tanggal_lahir" class="form-label">Tanggal Lahir <span
+                                                class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="tanggal_lahir"
+                                            name="tanggal_lahir" required value="{{ old('tanggal_lahir') }}"
+                                            max="{{ date('Y-m-d', strtotime('-1 day')) }}" />
+                                        @error('tanggal_lahir')
+                                            <div class="text-danger">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
                                         <label for="golongan_darah" class="form-label">Golongan Darah</label>
                                         <select class="form-select" id="golongan_darah" name="golongan_darah">
                                             <option value="">Pilih Golongan Darah</option>
@@ -486,7 +642,32 @@
                                 <!-- Hidden input untuk quantity dengan nilai default 1 -->
                                 <input type="hidden" id="quantity" name="quantity" value="1" />
 
-                                <button type="submit" class="btn btn-primary">
+                                <!-- Agreement Box -->
+                                <div class="agreement-box">
+                                    <h6>
+                                        <i class="fas fa-file-contract"></i>
+                                        Syarat & Ketentuan
+                                    </h6>
+                                    <div class="agreement-text">
+                                        <p>Menyatakan bahwa peserta mengikuti Event "Balapan Mlayu 2026" dalam keadaan
+                                            sehat serta bersedia menjaga ketertiban, dan segala risiko yang timbul
+                                            menjadi tanggung jawab pribadi.</p>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="persetujuan"
+                                            name="persetujuan" value="1"
+                                            {{ old('persetujuan') ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="persetujuan">
+                                            Saya menyetujui syarat dan ketentuan yang berlaku <span
+                                                class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                    @error('persetujuan')
+                                        <div class="text-danger mt-2">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
                                     <i class="fas fa-credit-card"></i> Lanjut ke Pembayaran
                                 </button>
                             </form>
@@ -556,6 +737,8 @@
             const ticketPriceEl = document.getElementById('ticketPrice');
             const adminFeeEl = document.getElementById('adminFee');
             const totalPriceEl = document.getElementById('totalPrice');
+            const persetujuanCheckbox = document.getElementById('persetujuan');
+            const submitBtn = document.getElementById('submitBtn');
 
             // Admin fee static
             const ADMIN_FEE = 5000;
@@ -571,6 +754,14 @@
                 adminFeeEl.textContent = formatRupiah(ADMIN_FEE);
                 totalPriceEl.textContent = formatRupiah(total);
             }
+
+            // Enable/disable submit button based on checkbox
+            persetujuanCheckbox.addEventListener('change', function() {
+                submitBtn.disabled = !this.checked;
+            });
+
+            // Set initial state
+            submitBtn.disabled = !persetujuanCheckbox.checked;
 
             updatePrices();
         });

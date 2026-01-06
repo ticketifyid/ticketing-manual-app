@@ -10,6 +10,7 @@ class Buyer extends Model
         'nama_lengkap',
         'gender',
         'nik',
+        'tanggal_lahir',
         'golongan_darah',
         'alamat',
         'email',
@@ -34,6 +35,7 @@ class Buyer extends Model
     ];
 
     protected $casts = [
+        'tanggal_lahir' => 'date',
         'paid_at' => 'datetime',
         'payment_updated_at' => 'datetime',
         'created_at' => 'datetime',

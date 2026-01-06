@@ -391,6 +391,11 @@
                                 <span class="info-value">{{ $formData['nama_lengkap'] }}</span>
                             </div>
                             <div class="info-row">
+                                <span class="info-label">Tanggal Lahir</span>
+                                <span
+                                    class="info-value">{{ \Carbon\Carbon::parse($formData['tanggal_lahir'])->translatedFormat('d M Y') }}</span>
+                            </div>
+                            <div class="info-row">
                                 <span class="info-label">Email</span>
                                 <span class="info-value">{{ $formData['email'] }}</span>
                             </div>
@@ -473,6 +478,7 @@
                             <input type="hidden" name="nama_lengkap" value="{{ $formData['nama_lengkap'] }}">
                             <input type="hidden" name="gender" value="{{ $formData['gender'] }}">
                             <input type="hidden" name="nik" value="{{ $formData['nik'] }}">
+                            <input type="hidden" name="tanggal_lahir" value="{{ $formData['tanggal_lahir'] }}">
                             <input type="hidden" name="golongan_darah"
                                 value="{{ $formData['golongan_darah'] ?? '' }}">
                             <input type="hidden" name="alamat" value="{{ $formData['alamat'] }}">
