@@ -522,7 +522,7 @@
                                 <div class="bank-info-row">
                                     <div>
                                         <div class="bank-info-label">Nama Bank</div>
-                                        <div class="bank-info-value">Bank BCA</div>
+                                        <div class="bank-info-value">Bank Danamon</div>
                                     </div>
                                 </div>
 
@@ -530,7 +530,7 @@
                                     <div>
                                         <div class="bank-info-label">Nomor Rekening</div>
                                         <div class="bank-info-value">
-                                            <span id="accountNumber">1234567890</span>
+                                            <span id="accountNumber">6660067890</span>
                                             <button type="button" class="copy-btn" onclick="copyAccountNumber()">
                                                 <i class="fas fa-copy"></i>
                                                 Copy
@@ -542,7 +542,7 @@
                                 <div class="bank-info-row">
                                     <div>
                                         <div class="bank-info-label">Atas Nama</div>
-                                        <div class="bank-info-value">PT. Ticketify Indonesia</div>
+                                        <div class="bank-info-value">BPR SYARIAH KEDUNG A</div>
                                     </div>
                                 </div>
 
