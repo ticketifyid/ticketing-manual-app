@@ -576,6 +576,7 @@
                             <input type="hidden" name="gender" value="{{ $formData['gender'] }}">
                             <input type="hidden" name="nik" value="{{ $formData['nik'] }}">
                             <input type="hidden" name="tanggal_lahir" value="{{ $formData['tanggal_lahir'] }}">
+                            <input type="hidden" name="size_chart" value="{{ $formData['size_chart'] }}">
                             <input type="hidden" name="golongan_darah"
                                 value="{{ $formData['golongan_darah'] ?? '' }}">
                             <input type="hidden" name="alamat" value="{{ $formData['alamat'] }}">

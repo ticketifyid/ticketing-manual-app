@@ -11,6 +11,7 @@ class Buyer extends Model
         'gender',
         'nik',
         'tanggal_lahir',
+        'size_chart',
         'golongan_darah',
         'alamat',
         'email',

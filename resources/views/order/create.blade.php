@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <base href="{{ url('/') }}/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Order Form - Event Management</title>
@@ -424,6 +425,29 @@
             user-select: none;
         }
 
+        /* Size Chart Preview Styling */
+        .size-chart-preview {
+            background-color: var(--white);
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .size-chart-preview:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(212, 165, 116, 0.2);
+        }
+
+        .size-chart-preview img {
+            transition: transform 0.3s ease;
+        }
+
+        .size-chart-preview img:hover {
+            transform: scale(1.02);
+        }
+
         @media (max-width: 992px) {
             .order-summary {
                 position: relative;
@@ -614,6 +638,52 @@
                                     </div>
                                 </div>
 
+                                <!-- Size Chart Section -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Size Chart <span
+                                            class="text-danger">*</span></label>
+
+                                    <!-- Preview Gambar Size Chart -->
+                                    <div class="size-chart-preview mb-3">
+                                        <img src="{{ asset('assets/media/size/sizechart.jpeg') }}" alt="Size Chart"
+                                            class="img-fluid rounded border"
+                                            style="max-width: 100%; height: auto; cursor: pointer;"
+                                            data-bs-toggle="modal" data-bs-target="#sizeChartModal" />
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="fas fa-info-circle me-1"></i>Klik gambar untuk melihat detail
+                                            size chart
+                                        </small>
+                                    </div>
+
+                                    <!-- Dropdown Size -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="size_chart" class="form-label">Pilih Ukuran <span
+                                                    class="text-danger">*</span></label>
+                                            <select class="form-select" id="size_chart" name="size_chart" required>
+                                                <option value="">Pilih Ukuran</option>
+                                                <option value="XS"
+                                                    {{ old('size_chart') == 'XS' ? 'selected' : '' }}>XS</option>
+                                                <option value="S"
+                                                    {{ old('size_chart') == 'S' ? 'selected' : '' }}>S</option>
+                                                <option value="M"
+                                                    {{ old('size_chart') == 'M' ? 'selected' : '' }}>M</option>
+                                                <option value="L"
+                                                    {{ old('size_chart') == 'L' ? 'selected' : '' }}>L</option>
+                                                <option value="XL"
+                                                    {{ old('size_chart') == 'XL' ? 'selected' : '' }}>XL</option>
+                                                <option value="XXL"
+                                                    {{ old('size_chart') == 'XXL' ? 'selected' : '' }}>XXL</option>
+                                                <option value="XXXL"
+                                                    {{ old('size_chart') == 'XXXL' ? 'selected' : '' }}>XXXL</option>
+                                            </select>
+                                            @error('size_chart')
+                                                <div class="text-danger">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="nama_kontak_darurat" class="form-label">Nama Kontak Darurat <span
@@ -707,6 +777,29 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Size Chart -->
+    <div class="modal fade" id="sizeChartModal" tabindex="-1" aria-labelledby="sizeChartModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--dark); color: var(--white);">
+                    <h5 class="modal-title" id="sizeChartModalLabel">
+                        <i class="fas fa-ruler me-2"></i>Size Chart Detail
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <img src="{{ asset('assets/media/size/sizechart.jpeg') }}" alt="Size Chart Detail"
+                        class="img-fluid w-100" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
