@@ -7,9 +7,11 @@ use App\Models\Buyer;
 use App\Models\Ticket;
 use App\Models\Product;
 use App\Models\Discount;
+use App\Mail\OrderCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -326,10 +328,9 @@ class OrderController extends Controller
 
                 $buyer->update(['qr_code_path' => $qrCodeFullUrl]);
 
-                Log::info('Order Created Successfully', [
+                Log::info('QR Code Generated Successfully', [
                     'buyer_id' => $buyer->id,
                     'external_id' => $externalId,
-                    'payment_proof' => $paymentProofPath,
                     'qr_code_path' => $qrCodeFullUrl
                 ]);
             } catch (Exception $qrException) {
@@ -340,7 +341,37 @@ class OrderController extends Controller
                 ]);
             }
 
+            // Kirim email notifikasi order created
+            try {
+                // Load relasi sebelum kirim email
+                $buyer->load('ticket', 'discount');
+
+                Mail::to($buyer->email)->send(new OrderCreated($buyer));
+
+                Log::info('Order confirmation email sent successfully', [
+                    'buyer_id' => $buyer->id,
+                    'external_id' => $externalId,
+                    'email' => $buyer->email
+                ]);
+            } catch (Exception $mailException) {
+                Log::error('Failed to send order confirmation email', [
+                    'buyer_id' => $buyer->id,
+                    'external_id' => $externalId,
+                    'email' => $buyer->email,
+                    'error' => $mailException->getMessage(),
+                    'trace' => $mailException->getTraceAsString()
+                ]);
+                // Tidak perlu rollback, email bukan critical operation
+            }
+
             DB::commit();
+
+            Log::info('Order Created Successfully', [
+                'buyer_id' => $buyer->id,
+                'external_id' => $externalId,
+                'payment_proof' => $paymentProofPath,
+                'email_sent' => true
+            ]);
 
             return redirect()->route('payment.success')
                 ->with('success', 'Pembayaran berhasil diupload! Order ID: ' . $externalId)
