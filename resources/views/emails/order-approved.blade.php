@@ -84,10 +84,8 @@
 
             <p><strong>Langkah Selanjutnya:</strong></p>
             <ul>
-                <li>Simpan email ini sebagai bukti tiket</li>
-                <li>Bawa QR Code saat hari H event</li>
-                <li>Datang lebih awal untuk registrasi</li>
-                <li>Jangan lupa bawa identitas (KTP/SIM)</li>
+                <li>Simpan email ini untuk bukti pengambilan RPC dengan membawa kartu identitas (KTP)</li>
+                <li>Datang Tepat Waktu pada saat pengambilan RPC</li>
             </ul>
             <p>Kami tunggu kehadiran Anda di event!</p>
         </div>
