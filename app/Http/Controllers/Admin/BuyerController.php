@@ -8,6 +8,7 @@ use App\Mail\OrderApproved;
 use App\Mail\OrderRejected;
 use App\Exports\BuyerExport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
@@ -57,6 +58,12 @@ class BuyerController extends Controller
     {
         try {
             $buyer = Buyer::with(['ticket', 'discount'])->findOrFail($id);
+
+            // Pastikan hanya order yang masih pending yang bisa diapprove
+            if ($buyer->payment_status !== 'pending') {
+                return redirect()->route('admin.buyer.show', $id)
+                    ->with('error', 'Hanya pesanan dengan status pending yang dapat disetujui');
+            }
 
             // Update status pembayaran
             $buyer->update([
@@ -112,16 +119,35 @@ class BuyerController extends Controller
         try {
             $buyer = Buyer::with(['ticket', 'discount'])->findOrFail($id);
 
+            // Pastikan hanya order yang masih pending yang bisa direject
+            if ($buyer->payment_status !== 'pending') {
+                return redirect()->route('admin.buyer.show', $id)
+                    ->with('error', 'Hanya pesanan dengan status pending yang dapat ditolak');
+            }
+
+            DB::beginTransaction();
+
             // Update status pembayaran
             $buyer->update([
                 'payment_status' => 'failed',
                 'payment_updated_at' => now()
             ]);
 
+            // Kembalikan stok tiket
+            $buyer->ticket->increment('qty', $buyer->quantity);
+
+            // Kembalikan stok diskon jika ada
+            if ($buyer->discount_id && $buyer->discount) {
+                $buyer->discount->increment('qty', 1);
+            }
+
+            DB::commit();
+
             Log::info('Order rejected', [
                 'buyer_id' => $buyer->id,
                 'external_id' => $buyer->external_id,
-                'email' => $buyer->email
+                'email' => $buyer->email,
+                'qty_returned' => $buyer->quantity,
             ]);
 
             // Kirim email notifikasi rejection
@@ -149,6 +175,8 @@ class BuyerController extends Controller
                     ->with('warning', 'Pesanan ditolak, namun gagal mengirim email notifikasi. Error: ' . $mailException->getMessage());
             }
         } catch (Exception $e) {
+            DB::rollback();
+
             Log::error('Failed to reject order', [
                 'buyer_id' => $id,
                 'error' => $e->getMessage(),
