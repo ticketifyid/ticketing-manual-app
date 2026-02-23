@@ -37,6 +37,8 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             'Email',
             'Kategori Tiket',
             'Jumlah',
+            'Size Chart',
+            'Refferal',
             'Waktu Pemesanan',
             'Status Pembayaran',
             'Link Pembayaran',
@@ -58,6 +60,8 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             $buyer->email,
             $buyer->ticket->name,
             $buyer->quantity,
+            $buyer->size_chart,
+            $buyer->komunitas,
             $buyer->created_at->translatedFormat('l, d F Y'),
             $buyer->payment_status,
             $buyer->xendit_invoice_url,
@@ -66,8 +70,6 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             $buyer->total_amount,
         ];
     }
-
-
 
     public function columnWidths(): array
     {
@@ -79,12 +81,14 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             'E' => 25,  // Email
             'F' => 20,  // Kategori Tiket
             'G' => 8,   // Jumlah
-            'H' => 20,  // Waktu Pemesanan
-            'I' => 15,  // Status Pembayaran
-            'J' => 30,  // Link Pembayaran
-            'K' => 12,  // Harga Tiket
-            'L' => 12,  // Biaya Layanan
-            'M' => 12,  // Total Harga
+            'H' => 15,  // Size Chart
+            'I' => 20,  // Komunitas
+            'J' => 20,  // Waktu Pemesanan
+            'K' => 15,  // Status Pembayaran
+            'L' => 30,  // Link Pembayaran
+            'M' => 12,  // Harga Tiket
+            'N' => 12,  // Biaya Layanan
+            'O' => 12,  // Total Harga
         ];
     }
 
@@ -99,14 +103,14 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             $sheet->getRowDimension($row)->setRowHeight(25);
         }
 
-        // Style untuk header (opsional)
-        $sheet->getStyle('A1:M1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:M1')->getFill()
+        // Style untuk header
+        $sheet->getStyle('A1:O1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:O1')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setARGB('CCCCCC');
 
         // Center align untuk semua cells
-        $sheet->getStyle('A1:M' . $totalRows)->getAlignment()
+        $sheet->getStyle('A1:O' . $totalRows)->getAlignment()
             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
             ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
 

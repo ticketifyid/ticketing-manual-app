@@ -629,9 +629,9 @@
                                     </div>
 
                                     <div class="col-md-6 mb-3">
-                                        <label for="komunitas" class="form-label">Komunitas</label>
+                                        <label for="komunitas" class="form-label">Refferal</label>
                                         <input type="text" class="form-control" id="komunitas" name="komunitas"
-                                            value="{{ old('komunitas') }}" placeholder="Nama komunitas (opsional)" />
+                                            value="{{ old('komunitas') }}" placeholder="Nama Refferal (opsional)" />
                                         @error('komunitas')
                                             <div class="text-danger">{{ $message }}</div>
                                         @enderror
