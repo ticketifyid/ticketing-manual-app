@@ -33,6 +33,12 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             'No',
             'ID Pesanan',
             'Nama',
+            'Jenis Kelamin',  // +
+            'NIK',            // +
+            'Tanggal Lahir',  // +
+            'Golongan Darah', // +
+            'Alamat',         // +
+            'Nama BIB',       // +
             'No HP',
             'Email',
             'Kategori Tiket',
@@ -56,6 +62,12 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             $no++,
             $buyer->external_id,
             $buyer->nama_lengkap,
+            $buyer->gender,                                          // +
+            $buyer->nik,                                             // +
+            $buyer->tanggal_lahir?->translatedFormat('d F Y'),       // +
+            $buyer->golongan_darah,                                  // +
+            $buyer->alamat,                                          // +
+            $buyer->nama_bib,                                        // +
             $buyer->no_handphone,
             $buyer->email,
             $buyer->ticket->name,
@@ -77,40 +89,43 @@ class BuyerExport implements FromCollection, WithHeadings, WithMapping, WithColu
             'A' => 5,   // No
             'B' => 20,  // ID Pesanan
             'C' => 25,  // Nama
-            'D' => 15,  // No HP
-            'E' => 25,  // Email
-            'F' => 20,  // Kategori Tiket
-            'G' => 8,   // Jumlah
-            'H' => 15,  // Size Chart
-            'I' => 20,  // Komunitas
-            'J' => 20,  // Waktu Pemesanan
-            'K' => 15,  // Status Pembayaran
-            'L' => 30,  // Link Pembayaran
-            'M' => 12,  // Harga Tiket
-            'N' => 12,  // Biaya Layanan
-            'O' => 12,  // Total Harga
+            'D' => 15,  // Jenis Kelamin
+            'E' => 20,  // NIK
+            'F' => 18,  // Tanggal Lahir
+            'G' => 15,  // Golongan Darah
+            'H' => 30,  // Alamat
+            'I' => 20,  // Nama BIB
+            'J' => 15,  // No HP
+            'K' => 25,  // Email
+            'L' => 20,  // Kategori Tiket
+            'M' => 8,   // Jumlah
+            'N' => 15,  // Size Chart
+            'O' => 20,  // Komunitas
+            'P' => 20,  // Waktu Pemesanan
+            'Q' => 15,  // Status Pembayaran
+            'R' => 30,  // Link Pembayaran
+            'S' => 12,  // Harga Tiket
+            'T' => 12,  // Biaya Layanan
+            'U' => 12,  // Total Harga
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        // Set row height untuk header
         $sheet->getRowDimension('1')->setRowHeight(30);
 
-        // Set row height untuk semua baris data (normal height tanpa QR code)
-        $totalRows = $this->buyers->count() + 1; // +1 untuk header
+        $totalRows = $this->buyers->count() + 1;
         for ($row = 2; $row <= $totalRows; $row++) {
             $sheet->getRowDimension($row)->setRowHeight(25);
         }
 
-        // Style untuk header
-        $sheet->getStyle('A1:O1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:O1')->getFill()
+        // Ganti semua 'O' jadi 'U'
+        $sheet->getStyle('A1:U1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:U1')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setARGB('CCCCCC');
 
-        // Center align untuk semua cells
-        $sheet->getStyle('A1:O' . $totalRows)->getAlignment()
+        $sheet->getStyle('A1:U' . $totalRows)->getAlignment()
             ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
             ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
 
