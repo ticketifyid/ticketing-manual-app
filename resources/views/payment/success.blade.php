@@ -35,7 +35,7 @@
             <div class="space-y-3">
                 <a href="{{ url('/') }}"
                     class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-block">
-                    Kembali ke Beranda
+                    Kembali ke Beranda test
                 </a>
             </div>
         </div>
