@@ -8,16 +8,16 @@ use App\Models\Ticket;
 use App\Models\Product;
 use App\Models\Discount;
 use App\Mail\OrderCreated;
+use App\Services\QrCodeService; // ✅ tambah import ini
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+// ✅ hapus: use Illuminate\Support\Facades\Storage;
+// ✅ hapus: use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class OrderController extends Controller
 {
-    // Konstanta untuk biaya admin static
     const ADMIN_FEE = 5000;
 
     public function index()
@@ -85,14 +85,12 @@ class OrderController extends Controller
         $ticket = Ticket::findOrFail($request->ticket_id);
         $product = Product::first();
 
-        // VALIDASI STOK
         if ($ticket->qty < $request->quantity) {
             return redirect()->back()
                 ->with('error', 'Stok tiket tidak mencukupi. Stok tersedia: ' . $ticket->qty)
                 ->withInput();
         }
 
-        // Hitung biaya dengan admin fee static
         $ticket_price = $ticket->price * $request->quantity;
         $admin_fee = self::ADMIN_FEE;
         $total_amount = $ticket_price + $admin_fee;
@@ -159,13 +157,11 @@ class OrderController extends Controller
         $ticket = Ticket::findOrFail($request->ticket_id);
         $product = Product::first();
 
-        // VALIDASI STOK
         if ($ticket->qty < $request->quantity) {
             return redirect()->route('order.create', ['ticket_id' => $ticket->id])
                 ->with('error', 'Maaf, stok tiket sudah berkurang. Stok tersedia: ' . $ticket->qty);
         }
 
-        // Hitung biaya dengan admin fee static
         $ticket_price = $ticket->price * $request->quantity;
         $discount_amount = 0;
         $discount = null;
@@ -214,19 +210,16 @@ class OrderController extends Controller
 
         $ticket = Ticket::findOrFail($request->ticket_id);
 
-        // VALIDASI STOK FINAL
         if ($ticket->qty < $request->quantity) {
             return redirect()->back()
                 ->with('error', 'Stok tiket tidak mencukupi. Stok tersedia: ' . $ticket->qty)
                 ->withInput();
         }
 
-        // Hitung biaya dengan admin fee static
         $ticket_price = $ticket->price * $request->quantity;
         $discount_amount = 0;
         $discount_id = null;
 
-        // Validasi diskon
         if ($request->filled('discount_id')) {
             $discount = Discount::where('id', $request->discount_id)
                 ->where('ticket_id', $ticket->id)
@@ -247,7 +240,6 @@ class OrderController extends Controller
         $admin_fee = self::ADMIN_FEE;
         $total_amount = max(0, ($ticket_price + $admin_fee) - $discount_amount);
 
-        // Generate external ID unik
         do {
             $randomNumber = str_pad(rand(100000, 999999), 6, '0', STR_PAD_LEFT);
             $externalId = 'ORD-' . $randomNumber;
@@ -257,7 +249,6 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
-            // VALIDASI STOK DALAM TRANSACTION
             $ticket = Ticket::lockForUpdate()->findOrFail($request->ticket_id);
 
             if ($ticket->qty < $request->quantity) {
@@ -267,7 +258,6 @@ class OrderController extends Controller
                     ->withInput();
             }
 
-            // Upload bukti pembayaran
             $paymentProofPath = null;
             if ($request->hasFile('payment_proof')) {
                 $file = $request->file('payment_proof');
@@ -275,119 +265,103 @@ class OrderController extends Controller
                 $paymentProofPath = $file->storeAs('payment_proofs', $filename, 'public');
             }
 
-            // Kurangi stok
             $ticket->decrement('qty', $request->quantity);
 
             if ($discount_id) {
                 Discount::where('id', $discount_id)->decrement('qty', 1);
             }
 
-            // Simpan data buyer
             $buyer = Buyer::create([
-                'nama_lengkap' => $request->nama_lengkap,
-                'gender' => $request->gender,
-                'nik' => $request->nik,
-                'tanggal_lahir' => $request->tanggal_lahir,
-                'size_chart' => $request->size_chart,
-                'golongan_darah' => $request->golongan_darah,
-                'alamat' => $request->alamat,
-                'email' => $request->email,
-                'no_handphone' => $request->no_handphone,
-                'nama_bib' => $request->nama_bib,
-                'komunitas' => $request->komunitas,
-                'nama_kontak_darurat' => $request->nama_kontak_darurat,
+                'nama_lengkap'         => $request->nama_lengkap,
+                'gender'               => $request->gender,
+                'nik'                  => $request->nik,
+                'tanggal_lahir'        => $request->tanggal_lahir,
+                'size_chart'           => $request->size_chart,
+                'golongan_darah'       => $request->golongan_darah,
+                'alamat'               => $request->alamat,
+                'email'                => $request->email,
+                'no_handphone'         => $request->no_handphone,
+                'nama_bib'             => $request->nama_bib,
+                'komunitas'            => $request->komunitas,
+                'nama_kontak_darurat'  => $request->nama_kontak_darurat,
                 'nomor_kontak_darurat' => $request->nomor_kontak_darurat,
-                'quantity' => $request->quantity,
-                'ticket_id' => $request->ticket_id,
-                'discount_id' => $discount_id,
-                'ticket_price' => $ticket_price,
-                'admin_fee' => $admin_fee,
-                'total_amount' => $total_amount,
-                'external_id' => $externalId,
-                'payment_proof' => $paymentProofPath,
-                'payment_status' => 'pending',
-                'payment_method' => 'manual_transfer',
+                'quantity'             => $request->quantity,
+                'ticket_id'            => $request->ticket_id,
+                'discount_id'          => $discount_id,
+                'ticket_price'         => $ticket_price,
+                'admin_fee'            => $admin_fee,
+                'total_amount'         => $total_amount,
+                'external_id'          => $externalId,
+                'payment_proof'        => $paymentProofPath,
+                'payment_status'       => 'pending',
+                'payment_method'       => 'manual_transfer',
             ]);
 
-            // Generate QR Code
-            try {
-                $verifyUrl = route('ticket.verify', ['external_id' => $externalId]);
-                $qrCodePath = 'qr_codes/qr_' . $externalId . '.png';
+            DB::commit(); // ✅ Commit duluan sebelum QR & email
 
-                if (!Storage::disk('public')->exists('qr_codes')) {
-                    Storage::disk('public')->makeDirectory('qr_codes');
-                }
-
-                $qrCode = QrCode::format('png')
-                    ->size(300)
-                    ->margin(2)
-                    ->generate($verifyUrl);
-
-                Storage::disk('public')->put($qrCodePath, $qrCode);
-                $qrCodeFullUrl = Storage::disk('public')->url($qrCodePath);
-
-                $buyer->update(['qr_code_path' => $qrCodeFullUrl]);
-
-                Log::info('QR Code Generated Successfully', [
-                    'buyer_id' => $buyer->id,
-                    'external_id' => $externalId,
-                    'qr_code_path' => $qrCodeFullUrl
-                ]);
-            } catch (Exception $qrException) {
-                Log::error('QR Code Generation Failed', [
-                    'buyer_id' => $buyer->id,
-                    'external_id' => $externalId,
-                    'error' => $qrException->getMessage()
-                ]);
-            }
-
-            // Kirim email notifikasi order created
-            try {
-                // Load relasi sebelum kirim email
-                $buyer->load('ticket', 'discount');
-
-                Mail::to($buyer->email)->send(new OrderCreated($buyer));
-
-                Log::info('Order confirmation email sent successfully', [
-                    'buyer_id' => $buyer->id,
-                    'external_id' => $externalId,
-                    'email' => $buyer->email
-                ]);
-            } catch (Exception $mailException) {
-                Log::error('Failed to send order confirmation email', [
-                    'buyer_id' => $buyer->id,
-                    'external_id' => $externalId,
-                    'email' => $buyer->email,
-                    'error' => $mailException->getMessage(),
-                    'trace' => $mailException->getTraceAsString()
-                ]);
-                // Tidak perlu rollback, email bukan critical operation
-            }
-
-            DB::commit();
-
-            Log::info('Order Created Successfully', [
-                'buyer_id' => $buyer->id,
-                'external_id' => $externalId,
-                'payment_proof' => $paymentProofPath,
-                'email_sent' => true
-            ]);
-
-            return redirect()->route('payment.success')
-                ->with('success', 'Pembayaran berhasil diupload! Order ID: ' . $externalId)
-                ->with('external_id', $externalId);
         } catch (Exception $e) {
             DB::rollback();
 
             Log::error('Order Creation Failed', [
                 'error_message' => $e->getMessage(),
-                'external_id' => $externalId ?? 'not_generated',
-                'ticket_id' => $request->ticket_id,
-                'stack_trace' => $e->getTraceAsString()
+                'external_id'   => $externalId ?? 'not_generated',
+                'ticket_id'     => $request->ticket_id,
+                'stack_trace'   => $e->getTraceAsString()
             ]);
 
             return redirect()->route('order.create', ['ticket_id' => $request->ticket_id])
                 ->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
         }
+
+        // ✅ Generate QR Code SETELAH commit
+        try {
+            $verifyUrl = route('ticket.verify', ['external_id' => $externalId]);
+            $qrUrl     = (new QrCodeService())->saveAndGetUrl($verifyUrl, $externalId);
+
+            $buyer->update(['qr_code_path' => $qrUrl]);
+
+            Log::info('QR Code Generated Successfully', [
+                'buyer_id'    => $buyer->id,
+                'external_id' => $externalId,
+                'qr_code_url' => $qrUrl,
+            ]);
+        } catch (Exception $qrException) {
+            Log::error('QR Code Generation Failed', [
+                'buyer_id'    => $buyer->id,
+                'external_id' => $externalId,
+                'error'       => $qrException->getMessage(),
+            ]);
+        }
+
+        // ✅ Kirim email SETELAH commit & QR
+        try {
+            $buyer->load('ticket', 'discount');
+
+            Mail::to($buyer->email)->send(new OrderCreated($buyer));
+
+            Log::info('Order confirmation email sent successfully', [
+                'buyer_id'    => $buyer->id,
+                'external_id' => $externalId,
+                'email'       => $buyer->email,
+            ]);
+        } catch (Exception $mailException) {
+            Log::error('Failed to send order confirmation email', [
+                'buyer_id'    => $buyer->id,
+                'external_id' => $externalId,
+                'email'       => $buyer->email,
+                'error'       => $mailException->getMessage(),
+                'trace'       => $mailException->getTraceAsString()
+            ]);
+        }
+
+        Log::info('Order Created Successfully', [
+            'buyer_id'      => $buyer->id,
+            'external_id'   => $externalId,
+            'payment_proof' => $paymentProofPath,
+        ]);
+
+        return redirect()->route('payment.success')
+            ->with('success', 'Pembayaran berhasil diupload! Order ID: ' . $externalId)
+            ->with('external_id', $externalId);
     }
 }
